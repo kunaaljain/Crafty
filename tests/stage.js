@@ -2,6 +2,10 @@
   module("Viewport", {
     setup: function() {
       resetStage();
+    },
+
+    teardown: function() {
+      resetStage();
     }
   });
 
@@ -10,18 +14,18 @@
       x: 50,
       y: 50
     });
-    var before = Crafty.DOM.translate(e.x, e.y);
+    var before = Crafty.domHelper.translate(e.x, e.y);
 
     Crafty.viewport.scroll('_x', 100);
-    equal(before.x - Crafty.DOM.translate(e.x, e.y).x, 100, "Scroll in x direction");
+    equal(before.x - Crafty.domHelper.translate(e.x, e.y).x, 100, "Scroll in x direction");
 
     Crafty.viewport.scroll('_y', 70);
-    equal(before.y - Crafty.DOM.translate(e.x, e.y).y, 70, "Scroll in y direction");
+    equal(before.y - Crafty.domHelper.translate(e.x, e.y).y, 70, "Scroll in y direction");
 
     Crafty.viewport.scroll('_x', 0);
     Crafty.viewport.scroll('_y', 0);
-    equal(before.x - Crafty.DOM.translate(e.x, e.y).x, 0, "Scroll to 0");
-    equal(before.y - Crafty.DOM.translate(e.x, e.y).y, 0, "Scroll to 0");
+    equal(before.x - Crafty.domHelper.translate(e.x, e.y).x, 0, "Scroll to 0");
+    equal(before.y - Crafty.domHelper.translate(e.x, e.y).y, 0, "Scroll to 0");
   });
 
   test("scroll using x, y", function() {
@@ -29,28 +33,30 @@
       x: 50,
       y: 50
     });
-    var before = Crafty.DOM.translate(e.x, e.y);
+    var before = Crafty.domHelper.translate(e.x, e.y);
 
     Crafty.viewport.scroll('x', 100);
-    equal(before.x - Crafty.DOM.translate(e.x, e.y).x, 100, "Scroll in x direction");
+    equal(before.x - Crafty.domHelper.translate(e.x, e.y).x, 100, "Scroll in x direction");
 
     Crafty.viewport.scroll('y', 70);
-    equal(before.y - Crafty.DOM.translate(e.x, e.y).y, 70, "Scroll in y direction");
+    equal(before.y - Crafty.domHelper.translate(e.x, e.y).y, 70, "Scroll in y direction");
 
     Crafty.viewport.scroll('x', 0);
     Crafty.viewport.scroll('y', 0);
-    equal(before.x - Crafty.DOM.translate(e.x, e.y).x, 0, "Scroll to 0");
-    equal(before.y - Crafty.DOM.translate(e.x, e.y).y, 0, "Scroll to 0");
+    equal(before.x - Crafty.domHelper.translate(e.x, e.y).x, 0, "Scroll to 0");
+    equal(before.y - Crafty.domHelper.translate(e.x, e.y).y, 0, "Scroll to 0");
   });
 
   test("Viewport resizing", function(){
     var flag = 0;
     var e = Crafty("2D, Canvas");
-    Crafty.canvas.init();
-
+    
+    var layer = Crafty.canvasLayer;
+    layer.init();
+    
     var w = Crafty.viewport.width;
 
-    equal( Crafty.canvas._canvas.width, Crafty.viewport.width, "Initial canvas size matches viewport");
+    equal( layer._canvas.width, Crafty.viewport.width, "Initial canvas size matches viewport");
     equal(Crafty.stage.elem.style.width, Crafty.viewport.width + "px", "Initial stage size matches viewport");
     Crafty.bind("ViewportResize", function(){flag++;});
 
@@ -58,7 +64,7 @@
 
     equal(flag, 1, "ViewportResize triggered");
     equal(Crafty.viewport.width, w+10, "Viewport increased in width");
-    equal( Crafty.canvas._canvas.width, Crafty.viewport.width , "Canvas size matches viewport after change");
+    equal( layer._canvas.width, Crafty.viewport.width , "Canvas size matches viewport after change");
     equal(Crafty.stage.elem.style.width, Crafty.viewport.width +"px", "Stage size matches viewport after change");
 
     var h = Crafty.viewport.height;
@@ -67,7 +73,7 @@
 
     equal(flag, 2, "ViewportResize triggered");
     equal(Crafty.viewport.height, h+10, "Viewport increased in width");
-    equal( Crafty.canvas._canvas.height, Crafty.viewport.height , "Canvas size matches viewport after change");
+    equal( layer._canvas.height, Crafty.viewport.height , "Canvas size matches viewport after change");
     equal(Crafty.stage.elem.style.height, Crafty.viewport.height +"px", "Stage size matches viewport after change");
 
   });
@@ -86,12 +92,6 @@
 
   test("pan", function() {
     Crafty.viewport.clampToEntities = false;
-    Crafty.e("2D, DOM").attr({
-      x: 0,
-      y: 0,
-      w: Crafty.viewport.width * 2,
-      h: Crafty.viewport.height * 2
-    });
 
     var done = 0;
     var panDone = function() {
@@ -114,8 +114,16 @@
     equal(Crafty.viewport._y, -100, "Pan all the way and stay there");
     equal(done, 1, "CameraAnimationDone has fired once");
 
-    Crafty.viewport.scroll('x', 0);
-    Crafty.viewport.scroll('y', 0);
+  });
+
+  test("pan with easing", function() {
+    Crafty.viewport.clampToEntities = false;
+
+    Crafty.viewport.pan(100, 0, 10 * 20, "easeInQuad");
+    Crafty.timer.simulateFrames(5);
+    equal(Crafty.viewport._x, -25, "Pan quarter of the way on half the time");
+    Crafty.timer.simulateFrames(5);
+    equal(Crafty.viewport._x, -100, "Pan all the way when all the time is spent");
   });
 
   test("zoom", function() {
@@ -127,16 +135,6 @@
       done++;
     };
     Crafty.one("CameraAnimationDone", panDone);
-
-    Crafty.e("2D, DOM").attr({
-      x: 0,
-      y: 0,
-      w: Crafty.viewport.width * 2,
-      h: Crafty.viewport.height * 2
-    });
-    Crafty.viewport.scroll('x', 0);
-    Crafty.viewport.scroll('y', 0);
-    Crafty.viewport.scale(1);
 
     Crafty.viewport.zoom(2, 0, 0, 10 * 20);
     Crafty.timer.simulateFrames(5);
@@ -191,10 +189,61 @@
     Crafty.timer.simulateFrames(1);
     equal(Crafty.viewport._x, (-(e2.x + e2.w / 2 - Crafty.viewport.width / 2)), "Entity centered from non-zero origin");
     equal(Crafty.viewport._y, (-(e2.y + e2.h / 2 - Crafty.viewport.height / 2)), "Entity centered from non-zero origin");
+  });
 
+  test("viewport.reset() gives correct values", function() {
+    Crafty.viewport.clampToEntities = false;
+    Crafty.viewport.scroll('_x', 50);
+    Crafty.viewport.scroll('_y', 50);
+    Crafty.viewport.scale(2);
+    equal(Crafty.viewport._x, 50, "Viewport starts scrolled");
+    equal(Crafty.viewport._y, 50, "Viewport starts scrolled");
+    equal(Crafty.viewport._scale, 2, "Viewport starts scaled");
+    Crafty.viewport.reset();
+    equal(Crafty.viewport._x, 0, "Viewport _x is reset");
+    equal(Crafty.viewport._y, 0, "Viewport _y is reset");
+    equal(Crafty.viewport._scale, 1, "Viewport _scale is reset");
     Crafty.viewport.clampToEntities = true;
-    Crafty.viewport.scroll('x', 0);
-    Crafty.viewport.scroll('y', 0);
+  });
+
+  test("viewport.reset() triggers StopCamera", function() {
+    Crafty.viewport.clampToEntities = false;
+    var stopped = false;
+    Crafty.one("StopCamera", function(){
+      stopped = true;
+    });
+    Crafty.viewport.reset();
+    equal(stopped, true, "Viewport.reset triggers StopCamera");
+  });
+
+  test("pan and StopCamera", function() {
+    Crafty.viewport.clampToEntities = false;
+
+    var done = 0;
+    Crafty.one("CameraAnimationDone", function() { done++; });
+
+    Crafty.viewport.pan(100, 0, 10 * 20);
+    Crafty.timer.simulateFrames(5);
+    // Stop at half-way point
+    Crafty.trigger("StopCamera");
+    Crafty.timer.simulateFrames(5);
+    equal(Crafty.viewport._x, -50, "Pan still half way after camera has been stopped");
+    equal(done, 0, "CameraAnimationDone hasn't fired");
+  });
+
+  test("zoom and StopCamera", function() {
+    Crafty.viewport.clampToEntities = false;
+
+    var done = 0;
+    Crafty.one("CameraAnimationDone", function() { done++; });
+
+    Crafty.viewport.zoom(4, 0, 0, 10 * 20);    
+    Crafty.timer.simulateFrames(5);
+    // Stop at half-way point
+    Crafty.trigger("StopCamera");
+    Crafty.timer.simulateFrames(5);
+    equal(Crafty.viewport._scale, 2, "Zoom at half way after camera has been stopped");
+    equal(done, 0, "CameraAnimationDone hasn't fired");
   });
 
   test("DOMtranslate", function() {
@@ -208,7 +257,7 @@
     // (x,y) = (-Crafty.viewport._x, -Crafty.viewport._y)
     clientX = Crafty.stage.x - document.body.scrollLeft - document.documentElement.scrollLeft;
     clientY = Crafty.stage.y - document.body.scrollTop - document.documentElement.scrollTop;
-    craftyxy = Crafty.DOM.translate(clientX, clientY);
+    craftyxy = Crafty.domHelper.translate(clientX, clientY);
     strictEqual(craftyxy.x, -Crafty.viewport._x);
     strictEqual(craftyxy.y, -Crafty.viewport._y);
 
@@ -217,14 +266,9 @@
     // y = -Crafty.viewport._y + Crafty.viewport._height / Crafty.viewport._scale
     clientX = Crafty.stage.x + Crafty.stage.elem.clientWidth - document.body.scrollLeft - document.documentElement.scrollLeft;
     clientY = Crafty.stage.y + Crafty.stage.elem.clientHeight - document.body.scrollTop - document.documentElement.scrollTop;
-    craftyxy = Crafty.DOM.translate(clientX, clientY);
+    craftyxy = Crafty.domHelper.translate(clientX, clientY);
     strictEqual(craftyxy.x, -Crafty.viewport._x + (Crafty.viewport._width / Crafty.viewport._scale));
     strictEqual(craftyxy.y, -Crafty.viewport._y + (Crafty.viewport._height / Crafty.viewport._scale));
-
-    // clean up
-    Crafty.viewport.scale(1);
-    Crafty.viewport.x = 0;
-    Crafty.viewport.y = 0;
   });
 
 

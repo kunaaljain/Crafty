@@ -38,7 +38,7 @@
 
   test("removeComponent removes element class", function() {
     var element = Crafty.e("DOM");
-    hasClassName = function(el, name) {
+    var hasClassName = function(el, name) {
       return el._element.className.indexOf(name) >= 0;
     };
     element.addComponent("removeMe");
@@ -63,7 +63,7 @@
   test("removing DOM component cleans up", function(){
     var element = Crafty.e("DOM");
     var node = element._element;
-    strictEqual(node.parentNode, Crafty.stage.inner, "child of the stage");
+    strictEqual(node.parentNode, Crafty.domLayer._div, "child of the stage");
     element._changed = false;
     element.removeComponent("DOM");
     element.trigger("Invalidate");

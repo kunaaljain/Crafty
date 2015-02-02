@@ -3,17 +3,13 @@ var fs = require('fs');
 
 module.exports = function (grunt) {
     var pkg = grunt.file.readJSON('package.json');
-    var fileList = pkg.files, version = pkg.version;
+    var version = pkg.version;
     var banner =    '/**\n' +
                     ' * <%= pkg.name %> <%= pkg.version %>\n' +
                     ' * <%= pkg.author.url %>\n *\n' +
                     ' * Copyright <%= grunt.template.today("yyyy") %>, <%= pkg.author.name %>\n' +
                     ' * Dual licensed under the MIT or GPL licenses.\n' +
                     ' */\n\n';
-
-    var getFiles = function (){
-        return fileList;
-    };
 
     var docGen = function(){
         done = this.async();
@@ -24,7 +20,8 @@ module.exports = function (grunt) {
             done();
         };
         var md = require("./build/api-gen");
-        md.document(getFiles(), buildDir, "build/template.html", version, callback);
+        md.document(grunt.file.expand('src/*.js'),
+            buildDir, "build/template.html", version, callback);
     };
 
     // Project configuration.
@@ -48,6 +45,9 @@ module.exports = function (grunt) {
             dist: {
                 files: {
                     'crafty.js': ['src/crafty.js']
+                },
+                options: {
+                    transform: ['brfs']
                 }
             },
             debug: {
@@ -55,10 +55,12 @@ module.exports = function (grunt) {
                     'crafty.js': ['src/crafty.js']
                 },
                 options: {
-                    debug: true
+                    debug: true,
+                    transform: ['brfs']
                 }
             }
         },
+
 
         watch: {
             files: ['src/*.js'],
@@ -114,6 +116,8 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-jsvalidate');
     grunt.loadNpmTasks('grunt-browserify');
     grunt.loadNpmTasks('grunt-banner');
+
+ 
 
     grunt.registerTask('version', 'Takes the version into src/version.js', function() {
         fs.writeFileSync('src/version.js', 'module.exports = "' + version + '";');

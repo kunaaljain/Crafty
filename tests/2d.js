@@ -255,7 +255,7 @@
 
 
   // This test assumes that the "circles" are really octagons, as per Crafty.circle.
-  test("SAT", function() {
+  test("SAT overlap with circles", function() {
     var e = Crafty.e("2D, Collision");
     var c1 = new Crafty.circle(100, 100, 10);
     var c2 = new Crafty.circle(100, 105, 10);
@@ -263,9 +263,18 @@
 
   });
 
+  // Testcase from issue #828 by VHonzik
+  test("SAT overlap with rectangles", function() {
+    var e = Crafty.e("2D, Collision");
+    var c1 = new Crafty.polygon([0,1, 50, 1, 50, 51, 0, 51]);
+    var c2 = new Crafty.polygon([-10, -10, -10, 10, 10, 10, 10, -10]);
+    strictEqual(e._SAT(c1, c2) !== false, true, "Polygons should test as overlapping");
+
+  });
+
 
   test("adjustable boundary", function() {
-    e = Crafty.e("2D").attr({
+    var e = Crafty.e("2D").attr({
       x: 10,
       y: 10,
       w: 10,
@@ -314,7 +323,7 @@
 
     e.disableControl();
     Crafty.trigger('EnterFrame');
-    equal(e._movement.x, 1);
+    equal(e._movement.x, 0);
     equal(e._x, 1);
 
     Crafty.trigger('KeyUp', {
@@ -356,17 +365,17 @@
       h: 50
     });
 
-    equal(e.map.points[0][0], 0, "Before rotation: x_0 is 0");
-    equal(e.map.points[0][1], 0, "y_0 is 0");
-    equal(e.map.points[2][0], 40, "x_2 is 40");
-    equal(e.map.points[2][1], 50, "y_2 is 50");
+    equal(e.map.points[0], 0, "Before rotation: x_0 is 0");
+    equal(e.map.points[1], 0, "y_0 is 0");
+    equal(e.map.points[4], 40, "x_2 is 40");
+    equal(e.map.points[5], 50, "y_2 is 50");
 
     e.rotation = 90;
 
-    equal(Math.round(e.map.points[0][0]), 0, "After rotation by 90 deg: x_0 is 0");
-    equal(Math.round(e.map.points[0][1]), 0, "y_0 is 0");
-    equal(Math.round(e.map.points[2][0]), -50, "x_2 is -50");
-    equal(Math.round(e.map.points[2][1]), 40, "y_2 is 40");
+    equal(Math.round(e.map.points[0]), 0, "After rotation by 90 deg: x_0 is 0");
+    equal(Math.round(e.map.points[1]), 0, "y_0 is 0");
+    equal(Math.round(e.map.points[4]), -50, "x_2 is -50");
+    equal(Math.round(e.map.points[5]), 40, "y_2 is 40");
 
     // After rotation the MBR will have changed
     equal(Math.round(e._mbr._w), 50, "_mbr._w is  50");
@@ -376,20 +385,20 @@
 
     e.collision(); // Check that regenerating the hitbox while rotated works correctly
 
-    equal(Math.round(e.map.points[0][0]), 0, "After rotation and hitbox regeneration: x_0 is 0");
-    equal(Math.round(e.map.points[0][1]), 0, "y_0 is 0");
-    equal(Math.round(e.map.points[2][0]), -50, "x_2 is -50");
-    equal(Math.round(e.map.points[2][1]), 40, "y_2 is 40");
+    equal(Math.round(e.map.points[0]), 0, "After rotation and hitbox regeneration: x_0 is 0");
+    equal(Math.round(e.map.points[1]), 0, "y_0 is 0");
+    equal(Math.round(e.map.points[4]), -50, "x_2 is -50");
+    equal(Math.round(e.map.points[5]), 40, "y_2 is 40");
 
 
     // Check that changing the width when rotated resizes correctly for both hitbox and MBR
     // Rotated by 90 degrees, changing the width of the entity should change the height of the hitbox/mbr
     e.w = 100;
 
-    equal(Math.round(e.map.points[0][0]), 0, "After rotation and increase in width: x_0 is 0");
-    equal(Math.round(e.map.points[0][1]), 0, "y_0 is 0");
-    equal(Math.round(e.map.points[2][0]), -50, "x_2 is -50");
-    equal(Math.round(e.map.points[2][1]), 100, "y_2 is 100");
+    equal(Math.round(e.map.points[0]), 0, "After rotation and increase in width: x_0 is 0");
+    equal(Math.round(e.map.points[1]), 0, "y_0 is 0");
+    equal(Math.round(e.map.points[4]), -50, "x_2 is -50");
+    equal(Math.round(e.map.points[5]), 100, "y_2 is 100");
 
     // After rotation the MBR will have changed
     equal(Math.round(e._mbr._w), 50, "_mbr._w is  50");
@@ -402,11 +411,11 @@
 
   test("Hitboxes outside of entities (CBR)", function() {
     var poly = new Crafty.polygon([
-      [-8, 6],
-      [0, -8],
-      [8, -14],
-      [16, -8],
-      [24, 6]
+      -8, 6,
+      0, -8,
+      8, -14,
+      16, -8,
+      24, 6
     ]);
 
     var e = Crafty.e("2D, Collision").attr({
@@ -437,10 +446,10 @@
 
   test("CBRs on resize", function() {
     var poly = new Crafty.polygon([
-      [0, 0],
-      [0, 12],
-      [12, 12],
-      [12, 0]
+      0, 0,
+      0, 12,
+      12, 12,
+      12, 0
     ]);
 
     var e = Crafty.e("2D, Collision").attr({
@@ -464,10 +473,10 @@
 
   test("CBRs should be removed on removal of component", function() {
     var poly = new Crafty.polygon([
-      [0, 0],
-      [0, 12],
-      [12, 12],
-      [12, 0]
+      0, 0,
+      0, 12,
+      12, 12,
+      12, 0
     ]);
 
     var e = Crafty.e("2D, Collision").attr({

@@ -123,6 +123,49 @@
 
   });
 
+  test("bind groups of entities", function() {
+    var e1 = Crafty.e("test"), e2 = Crafty.e("test");
+    var test_callback = function(){
+      this.test_flag = true;
+    };
+    Crafty("test").bind("TestEvent", test_callback);
+    e1.trigger("TestEvent");
+    strictEqual(e1.test_flag, true, "Entity event triggered on first entity");
+    notStrictEqual(e2.test_flag, false, "Not triggered on second ");
+
+    e1.test_flag = false;
+
+    Crafty.trigger("TestEvent");
+    strictEqual(e1.test_flag, true, "Global event triggered on first entity");
+    strictEqual(e2.test_flag, true, "Global event triggered on second entity");
+
+  });
+
+  test("trigger groups of entities", function(){
+    var e1 = Crafty.e("test"), e2 = Crafty.e("test");
+    var test_callback = function(){
+      this.test_flag = true;
+    };
+    e1.bind("TestEvent", test_callback);
+    e2.bind("TestEvent", test_callback);
+    Crafty("test").trigger("TestEvent");
+    strictEqual(e1.test_flag, true, "Triggered on first entity");
+    strictEqual(e2.test_flag, true, "Triggered on second entity");
+  });
+
+  test("bind to an event in response to that same event", function() {
+    var first = Crafty.e("test"),
+      triggered = 0;
+    function increment(){ triggered++; }
+    first.bind("myevent", function() {
+      increment();
+      first.bind("myevent", increment);
+    });
+    first.trigger("myevent");
+    strictEqual(triggered, 1, "event added in response to an event should not be triggered by that same event");
+
+  });
+
   test("unbind", function() {
     var first = Crafty.e("test");
     first.bind("myevent", function() {
@@ -242,7 +285,7 @@
   test("Crafty.get with only one object", function() {
     var e = Crafty.e("test");
     var collection = Crafty("test");
-    result = collection.get(0);
+    var result = collection.get(0);
     equal(result.getId(), e.getId(), "result of get(0) is correct entity");
     result = collection.get();
     equal(result.length, 1, "result of get() is array of length 1");
@@ -289,6 +332,8 @@
 
     Crafty.unbind(frameFunction);
   });
+
+  // TODO: add test for Crafty.stop() once problematic side effects are fixed!
 
   module("Scenes");
 
@@ -413,8 +458,8 @@
       h: 20
     }).collision();
     e.matchHitBox(); // only necessary until collision works properly!
-    equal(e.polygon.points[0][0], 10, "WiredHitBox -- correct x coord for upper right corner");
-    equal(e.polygon.points[2][1], 30, "correct y coord for lower right corner");
+    equal(e.polygon.points[0], 10, "WiredHitBox -- correct x coord for upper right corner");
+    equal(e.polygon.points[5], 30, "correct y coord for lower right corner");
     notEqual(typeof e._debug.strokeStyle, "undefined", "stroke style is assigned");
     equal(typeof e._debug.fillStyle, "undefined", "fill style is undefined");
 
@@ -427,14 +472,14 @@
       h: 20
     }).collision();
     e2.matchHitBox(); // only necessary until collision works properly!
-    equal(e2.polygon.points[0][0], 10, "SolidHitBox -- correct x coord for upper right corner");
-    equal(e2.polygon.points[2][1], 30, "correct y coord for lower right corner");
+    equal(e2.polygon.points[0], 10, "SolidHitBox -- correct x coord for upper right corner");
+    equal(e2.polygon.points[5], 30, "correct y coord for lower right corner");
     equal(typeof e2._debug.strokeStyle, "undefined", "stroke style is undefined");
     notEqual(typeof e2._debug.fillStyle, "undefined", "fill style is assigned");
 
-    e2.collision(new Crafty.polygon([0, 0], [15, 0], [0, 15]));
+    e2.collision(new Crafty.polygon([0, 0, 15, 0, 0, 15]));
     e2.matchHitBox();
-    equal(e2.polygon.points[2][1], 25, "After change -- correct y coord for third point");
+    equal(e2.polygon.points[5], 25, "After change -- correct y coord for third point");
 
     e2.destroy();
 
@@ -457,6 +502,27 @@
     equal(e.value(), 1, "1 after completed");
     e.tick(20);
     equal(e.value(), 1, "Remains 1 after completion");
+  });
+
+  test("Crafty.easing with custom function", function() {
+    var e = new Crafty.easing(80, function(t){return t*t;}) ; // 4 frames == 80ms by default
+    e.tick(20);
+    e.tick(20);
+    equal(e.value(), 0.25, ".25 after two steps");
+    e.tick(20);
+    e.tick(20);
+    equal(e.value(), 1, "1 after completed");
+  });
+
+  test("Crafty.easing with built-in smoothStep function", function() {
+    var e = new Crafty.easing(80, "smoothStep"); // 4 frames == 80ms by default
+    e.tick(20);
+    equal(e.value(), 0.15625, "0.15625 after one step");
+    e.tick(20);
+    equal(e.value(), 0.5, ".5 after two steps");
+    e.tick(20);
+    e.tick(20);
+    equal(e.value(), 1, "1 after completed");
   });
 
   test('Get', function() {
